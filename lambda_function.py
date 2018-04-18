@@ -6,8 +6,8 @@ import random
 def build_speechlet_response(title, output, reprompt_text, should_end_session):
     return {
         'outputSpeech': {
-            'type': 'PlainText',
-            'text': output
+            'type': 'SSML',
+            'text': "<speak> " + output + "</speak>"
         },
         'card': {
             'type': 'Simple',
@@ -51,7 +51,8 @@ def get_welcome_response():
 
 
     session_attributes = {}
-    speech_output = "Welcome to concentration sixty four! Please pick a category"
+    hello = random.sample(["aloha", "ahoy", "ahoy matey", "ahoy me hearties", "howdy", "bonjour"])
+    speech_output = "<say-as interpret-as=""interjection"">{}</say-as> Welcome to concentration sixty four! Please pick a category".format(hello)
     reprompt_text = ""
     should_end_session = False
     card_title = ""
@@ -62,7 +63,8 @@ def get_welcome_response():
 
 def handle_session_end_request():
     card_title = "Session Ended"
-    speech_output = "Thank you for playing concentration sixty four."
+    bye = random.sample(["bon voyage", "au revoir", "g'day" ])
+    speech_output = "<say-as interpret-as=""interjection"">{}</say-as> Thank you for playing concentration sixty four.".format(bye)
     should_end_session = True
     return build_response({}, build_speechlet_response(
         card_title, speech_output, None, should_end_session))
@@ -89,18 +91,28 @@ def check_word(intent, session):
         speech_output = "That's not in {}, game over!".format(category)
         should_end_session = True
     elif word in remaining_words:
+        if word == 'cat' or word == 'kitten':
+            meow = random.sample(['https://s3.amazonaws.com/ask-soundlibrary/animals/amzn_sfx_cat_purr_meow_01.mp3', 'https://s3.amazonaws.com/ask-soundlibrary/animals/amzn_sfx_cat_long_meow_1x_01.mp3', 'https://s3.amazonaws.com/ask-soundlibrary/animals/amzn_sfx_cat_angry_meow_1x_01.mp3'],1)
+            speech_output = "<audio src='{}'/>".format(meow)
+        elif word == 'elephant':
+            speech_output = "<audio src='https://s3.amazonaws.com/ask-soundlibrary/animals/amzn_sfx_elephant_03.mp3'/>"
+        elif word == 'horse':
+            speech_output = "<audio src='https://s3.amazonaws.com/ask-soundlibrary/animals/amzn_sfx_horse_whinny_01.mp3'/>"
+            
         remaining_words.remove(word)
         if remaining_words:
             alexas_word = alexas_turn(intent, session, remaining_words)
             remaining_words.remove(alexas_word)
-            speech_output ="My turn! {} ".format(alexas_word)
+            speech_output = speech_output + "My turn! {} ".format(alexas_word)
         else:
-            speech_output = "I've run out of words! You win."
+            wow = random.sample(["wow", "woo hoo", "well done", "sigh", "oops", "oh snap", "oh boy", "mamma mia"])
+            speech_output = speech_output + "<say-as interpret-as=""interjection"">{}</say-as> I've run out of words. You win.".format(wow)
         
         session_attributes = {'remaining words': remaining_words, 'category': category}
         should_end_session = False
     else:
-        speech_output ="{} has been said before, you lose".format(word)
+        boo = random.sample(["boo", "boo hoo", "checkmate", "eek", "gotcha", "oh snap", "oops", "whoops a daisy", "there there" ])
+        speech_output ="<say-as interpret-as=""interjection"">{0}</say-as>{1} has been said before, you lose".format(boo, word)
         should_end_session = True
         
   
