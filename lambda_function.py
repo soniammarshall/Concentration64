@@ -1,6 +1,7 @@
 
 from __future__ import print_function
 import words
+import random
 
 def build_speechlet_response(title, output, reprompt_text, should_end_session):
     return {
@@ -10,8 +11,8 @@ def build_speechlet_response(title, output, reprompt_text, should_end_session):
         },
         'card': {
             'type': 'Simple',
-            'title': "SessionSpeechlet - " + title,
-            'content': "SessionSpeechlet - " + output
+            'title': title,
+            'content': output
         },
         'reprompt': {
             'outputSpeech': {
@@ -50,7 +51,7 @@ def get_welcome_response():
 
 
     session_attributes = {}
-    speech_output = "Welcome to concentration sixty four!"
+    speech_output = "Welcome to concentration sixty four! Please pick a category"
     reprompt_text = ""
     should_end_session = False
     card_title = ""
@@ -66,75 +67,77 @@ def handle_session_end_request():
     return build_response({}, build_speechlet_response(
         card_title, speech_output, None, should_end_session))
 
-
-def sayHello(intent, session):
     
-    session_attributes = {}
-    should_end_session = False
-    slots = intent['slots']
-    
-    if 'name' not in slots:
-        return build_response(session_attributes, build_dialog_delgate('hello', 'name'))
-    
-    if 'value' not in slots['name']:
-        return build_response(session_attributes, build_dialog_delgate('hello', 'name'))
-        
-    name = slots['name']['value']
-    
-    speech_output = "Hello {}, I'm cat game".format(name)
-    
-    card_title = ""
-    reprompt_text = ""
-    
-    return build_response(session_attributes, build_speechlet_response(
-        card_title, speech_output, reprompt_text, should_end_session))
-        
-def play_game(intent, session):
-    
-    session_attributes = {}
-    should_end_session = False
-    slots = intent['slots']
-    
-    speech_output = "Hello, I'm cat game"
-    
-    card_title = ""
-    reprompt_text = ""
-    
-    return build_response(session_attributes, build_speechlet_response(
-        card_title, speech_output, reprompt_text, should_end_session))     
 
 def check_word(intent, session):
     print(session)
-    used_words = session.get('attributes', {}).get('used_words', [])
-    category = 'fruit' # Todo get from session
-    
-    # TODO check that word has a value
+    remaining_words = session.get('attributes', {}).get('remaining words', [])
+    category = session.get('attributes', {}).get('category', '')
     
     slots = intent['slots']
     word = slots['word']['value']
+
+    session_attributes = {}
     
-    # TODO check if the word in the category
-    
-    
-    should_end_session = False
-    
-    if word not in used_words:
-        speech_output ="Your word is {}".format(word)
-        used_words.append(word)
+    if category == '':
+        speech_output = "Choose a category first!"
+        should_end_session = False
+    elif word is None: 
+        speech_output = "You hesitated, game over!"
+        should_end_session = True
+    elif word not in words.categories[category]:
+        speech_output = "That's not in {}, game over!".format(category)
+        should_end_session = True
+    elif word in remaining_words:
+        remaining_words.remove(word)
+        if remaining_words:
+            alexas_word = alexas_turn(intent, session, remaining_words)
+            remaining_words.remove(alexas_word)
+            speech_output ="My turn! {} ".format(alexas_word)
+        else:
+            speech_output = "I've run out of words! You win."
+        
+        session_attributes = {'remaining words': remaining_words, 'category': category}
+        should_end_session = False
     else:
-        speech_output ="You said {} before, you lose".format(word)
-        shouldEndSession = True
-    
-    session_attributes = {'used_words': used_words}
-    
+        speech_output ="{} has been said before, you lose".format(word)
+        should_end_session = True
+        
   
     card_title = ""
     reprompt_text = ""
     
     return build_response(session_attributes, build_speechlet_response(
-        card_title, speech_output, reprompt_text, should_end_session))     
+        card_title, speech_output, reprompt_text, should_end_session))   
+        
+def choose_category(intent, session):
+    slots = intent['slots']
+    category = slots['category']['value']
+    
+    session_attributes = {}
+    if category is None:
+        speech_output = "I didn't hear you, repeat your category please."
+    elif category in words.categories.keys():
+        remaining_words = words.categories[category]
+        session_attributes = {'remaining words': remaining_words, 'category': category}
+        
+        speech_output = "The category is {}, let's begin! You start.".format(category)
+    else:
+        speech_output = "{} is not a valid category. Choose a new one!".format(category)
+    
+    should_end_session = False 
+    
+    card_title = ""
+    reprompt_text = ""
+    
+    return build_response(session_attributes, build_speechlet_response(
+        card_title, speech_output, reprompt_text, should_end_session))  
+        
+def alexas_turn(intent, session, remaining_words):
+    word = random.choice(remaining_words)
+    return word
 
-# --------------- Events ------------------
+#Events ------------------
 
 def on_session_started(session_started_request, session):
     """ Called when the session starts """
@@ -158,17 +161,14 @@ def on_intent(intent_request, session):
     intent = intent_request['intent']
     intent_name = intent_request['intent']['name']
 
-    # Dispatch to your skill's intent handlers
-    if intent_name == "hello":
-        return sayHello(intent, session)
-    elif intent_name == "playIntent":
-        return play_game(intent, session)
-    elif intent_name == "wordIntent":
+    if intent_name == "wordIntent":
         return check_word(intent, session)
     elif intent_name == "AMAZON.HelpIntent":
         return get_welcome_response()
     elif intent_name == "AMAZON.CancelIntent" or intent_name == "AMAZON.StopIntent":
         return handle_session_end_request()
+    elif intent_name == "chooseCategoryIntent":
+        return choose_category(intent, session)
     else:
         raise ValueError("Invalid intent")
 
