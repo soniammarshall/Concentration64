@@ -86,7 +86,7 @@ def check_word(intent, session):
         speech_output = "You hesitated, game over!"
         should_end_session = True
     elif word not in words.categories[category]:
-        speech_output = "That's not in {}, game over!".format(category)
+        speech_output = "{0} is not in the category {1}, game over!".format(word, category)
         should_end_session = True
     elif word in remaining_words:
         remaining_words.remove(word)
@@ -142,6 +142,22 @@ def alexas_turn(intent, session, remaining_words):
     word = random.choice(remaining_words)
     return word
 
+def unknown_word(intent, session):
+    # this function is called when unknownIntent is invoked, i.e. when 
+    # a word that is not in our categories is given
+    category = session.get('attributes', {}).get('category', '')
+    slots = intent['slots']
+    word = slots['word']['value']
+
+    session_attributes = {}
+    speech_output = "{0} is not in the category {1}, game over!".format(word, category)
+    should_end_session = True    
+    reprompt_text = None
+    card_title = ""
+    
+    return build_response(session_attributes, build_speechlet_response(
+        card_title, speech_output, reprompt_text, should_end_session))
+
 #Events ------------------
 
 def on_session_started(session_started_request, session):
@@ -166,8 +182,12 @@ def on_intent(intent_request, session):
     intent = intent_request['intent']
     intent_name = intent_request['intent']['name']
 
-    if intent_name == "wordIntent":
+    if intent_name == "fruitIntent":
         return check_word(intent, session)
+    elif intent_name == "animalsIntent":
+        return check_word(intent, session)
+    elif intent_name == "unknownIntent":
+        return unknown_word(intent, session)
     elif intent_name == "AMAZON.HelpIntent":
         return get_welcome_response()
     elif intent_name == "AMAZON.CancelIntent" or intent_name == "AMAZON.StopIntent":
