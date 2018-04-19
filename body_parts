@@ -45,7 +45,6 @@
 { "name": { "value": "ankle", "synonyms": [ "ankles" ] }},
 { "name": { "value": "nose", "synonyms": [ "noses" ] }},
 { "name": { "value": "teeth", "synonyms": [ "teeths" ] }},
-{ "name": { "value": "fingers", "synonyms": [ "fingerss" ] }},
 { "name": { "value": "heart", "synonyms": [ "hearts" ] }},
 { "name": { "value": "knee", "synonyms": [ "knees" ] }},
 { "name": { "value": "flesh", "synonyms": [ "fleshs", ] }},
